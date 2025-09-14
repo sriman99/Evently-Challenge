@@ -21,6 +21,7 @@ from app.models.user import User, UserRole
 from app.models.venue import Venue
 from app.models.event import Event, EventStatus
 from app.models.seat import Seat, SeatStatus
+from app.models.saga_state import SagaState
 from app.core.security import get_password_hash
 from sqlalchemy import select
 from datetime import datetime, timedelta
@@ -131,10 +132,8 @@ async def auto_seed_demo_data():
             start_time=datetime.now() + timedelta(days=30),
             end_time=datetime.now() + timedelta(days=30, hours=3),
             capacity=500,
-            available_seats=500,
             status=EventStatus.UPCOMING,
-            min_price=Decimal("50.00"),
-            max_price=Decimal("200.00")
+            created_by=admin_user.id
         )
 
         event2 = Event(
@@ -145,10 +144,8 @@ async def auto_seed_demo_data():
             start_time=datetime.now() + timedelta(days=45),
             end_time=datetime.now() + timedelta(days=47),
             capacity=1000,
-            available_seats=1000,
             status=EventStatus.UPCOMING,
-            min_price=Decimal("100.00"),
-            max_price=Decimal("500.00")
+            created_by=admin_user.id
         )
 
         session.add(event1)

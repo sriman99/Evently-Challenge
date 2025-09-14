@@ -12,6 +12,7 @@ from app.models.waitlist import Waitlist
 from app.models.notification import Notification
 from app.models.analytics import Analytics
 from app.models.payment import Payment
+from app.models.saga_state import SagaState
 
 __all__ = [
     "User",
@@ -24,5 +25,6 @@ __all__ = [
     "Waitlist",
     "Notification",
     "Analytics",
-    "Payment"
+    "Payment",
+    "SagaState"
 ]
