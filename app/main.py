@@ -53,6 +53,13 @@ async def lifespan(app: FastAPI):
     await init_db()
     logger.info("Database connection established")
 
+    # Auto-seed demo data if database is empty
+    try:
+        from app.core.seeding import seed_if_empty
+        await seed_if_empty()
+    except Exception as e:
+        logger.warning(f"Auto-seeding failed (non-critical): {e}")
+
     # Initialize Redis
     await init_redis()
     logger.info("Redis connection established")
@@ -78,23 +85,42 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title=settings.APP_NAME,
     description="""
-    🎫 **Evently - Scalable Event Ticketing Platform**
+    **Evently - Scalable Event Ticketing Platform**
 
-    A high-performance backend system for managing events, bookings, and user interactions with:
-    - ⚡ Advanced concurrency handling
-    - 🔄 Redis caching for real-time seat availability
-    - 🗄️ PostgreSQL persistence with optimistic locking
-    - 🔐 JWT-based authentication
-    - 📊 Real-time analytics and monitoring
+    A high-performance backend system designed to handle large-scale event ticketing with thousands of concurrent users.
+    Built with modern technologies and best practices for production-ready applications.
 
-    ## 🚀 Quick Start for Evaluators:
-    1. **Login**: Use `POST /api/v1/auth/login` with demo credentials
-    2. **Authorize**: Click the "Authorize" button and paste your access_token
-    3. **Test**: Try the protected endpoints like `GET /api/v1/events/`
+    **Key Features:**
+    - Advanced concurrency handling with optimistic locking
+    - Redis caching for real-time seat availability
+    - PostgreSQL persistence with transaction management
+    - JWT-based authentication and role-based access control
+    - Real-time analytics and comprehensive monitoring
+    - Rate limiting and performance optimization
+    - Comprehensive error handling and logging
 
-    ## 🔑 Demo Credentials:
-    - **Admin**: `admin@evently.com` / `Admin123!`
-    - **User**: `demo@evently.com` / `Demo123!`
+    **Architecture Highlights:**
+    - FastAPI framework for high-performance async operations
+    - SQLAlchemy with async support for database operations
+    - Redis for caching and session management
+    - Pydantic for data validation and serialization
+    - Structured logging and monitoring integration
+
+    **Quick Start for Evaluators:**
+    1. Login using POST /api/v1/auth/login with the demo credentials below
+    2. Copy the access_token from the login response
+    3. Click the "Authorize" button in this interface and paste the token
+    4. Test the protected endpoints such as GET /api/v1/events/
+
+    **Demo Credentials:**
+    - Admin Access: admin@evently.com / Admin123!
+    - User Access: demo@evently.com / Demo123!
+
+    **Testing Recommendations:**
+    - Try concurrent booking scenarios with multiple browser tabs
+    - Test role-based access with both admin and user accounts
+    - Monitor real-time seat availability updates
+    - Explore the analytics endpoints with admin credentials
     """,
     version=settings.APP_VERSION,
     docs_url="/docs",  # Always enable docs for evaluator access
