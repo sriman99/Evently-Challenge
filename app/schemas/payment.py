@@ -29,7 +29,7 @@ class PaymentMethod(str, enum.Enum):
 
 class PaymentCreate(BaseModel):
     booking_id: uuid.UUID
-    amount: Decimal = Field(..., gt=0, decimal_places=2)
+    amount: Decimal = Field(..., gt=0, max_digits=10, decimal_places=2)
     payment_method_id: str
     return_url: Optional[str] = None
 
@@ -58,7 +58,7 @@ class PaymentResponse(BaseModel):
 
 
 class RefundRequest(BaseModel):
-    amount: Optional[Decimal] = Field(None, gt=0, decimal_places=2)
+    amount: Optional[Decimal] = Field(None, gt=0, max_digits=10, decimal_places=2)
     reason: str = Field(..., min_length=1, max_length=500)
 
 
