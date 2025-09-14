@@ -4,11 +4,15 @@ This folder contains all project documentation required for the Evently challeng
 
 ## 📋 Challenge Deliverables
 
-### Required Documentation Files:
-- **[ARCHITECTURE.md](./ARCHITECTURE.md)** - High-level system architecture and design decisions
-- **[ER_DIAGRAM.md](./ER_DIAGRAM.md)** - Entity-relationship diagram and database schema
+### Primary Deliverables:
+- **[Evently-Architecture.png](./Evently-Architecture.png)** - 🎯 High-level system architecture diagram
+- **[ER-Diagram.png](./ER-Diagram.png)** - 🎯 Entity-relationship database schema
 - **[API_DOCUMENTATION.md](./API_DOCUMENTATION.md)** - Complete API endpoint documentation
 - **[CHALLENGE_DELIVERABLES.md](./CHALLENGE_DELIVERABLES.md)** - Deliverables checklist and compliance
+
+### Supporting Documentation:
+- **[ARCHITECTURE.md](./ARCHITECTURE.md)** - Detailed architecture explanations and design decisions
+- **[ER_DIAGRAM.md](./ER_DIAGRAM.md)** - Detailed database schema documentation
 
 ### Additional Resources:
 - **[API_TESTING_GUIDE.md](./API_TESTING_GUIDE.md)** - Step-by-step testing instructions for evaluators
