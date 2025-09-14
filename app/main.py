@@ -23,7 +23,7 @@ from app.models.event import Event, EventStatus
 from app.models.seat import Seat, SeatStatus
 from app.core.security import get_password_hash
 from sqlalchemy import select
-from datetime import timedelta
+from datetime import datetime, timedelta
 from uuid import uuid4
 from decimal import Decimal
 
