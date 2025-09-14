@@ -56,13 +56,22 @@ async def auto_seed_demo_data():
     from app.core.database import async_session
 
     async with async_session() as session:
-        # Check if users exist
-        result = await session.execute(select(User).limit(1))
-        if result.scalar_one_or_none():
-            logger.info("Database already contains data, skipping seeding")
-            return
+        # Check if demo users already exist
+        admin_result = await session.execute(select(User).where(User.email == "admin@evently.com"))
+        demo_result = await session.execute(select(User).where(User.email == "demo@evently.com"))
 
-        logger.info("Empty database detected, starting auto-seeding...")
+        admin_exists = admin_result.scalar_one_or_none()
+        demo_exists = demo_result.scalar_one_or_none()
+
+        if admin_exists and demo_exists:
+            logger.info("Demo users already exist, checking events...")
+            # Check if demo events exist
+            event_result = await session.execute(select(Event).limit(1))
+            if event_result.scalar_one_or_none():
+                logger.info("Demo data already complete, skipping seeding")
+                return
+
+        logger.info("Adding missing demo data...")
 
         # Use simple password hashing to avoid bcrypt issues
         try:
@@ -76,28 +85,35 @@ async def auto_seed_demo_data():
             admin_password_hash = hashlib.sha256("Admin123!".encode()).hexdigest()
             demo_password_hash = hashlib.sha256("Demo123!".encode()).hexdigest()
 
-        admin_user = User(
-            id=uuid4(),
-            email="admin@evently.com",
-            full_name="Admin User",
-            phone="+1234567890",
-            password_hash=admin_password_hash,
-            role=UserRole.ADMIN,
-            is_active=True
-        )
+        # Create admin user if doesn't exist
+        if not admin_exists:
+            admin_user = User(
+                id=uuid4(),
+                email="admin@evently.com",
+                full_name="Admin User",
+                phone="+1234567890",
+                password_hash=admin_password_hash,
+                role=UserRole.ADMIN,
+                is_active=True
+            )
+            session.add(admin_user)
+        else:
+            admin_user = admin_exists
 
-        demo_user = User(
-            id=uuid4(),
-            email="demo@evently.com",
-            full_name="Demo User",
-            phone="+1987654321",
-            password_hash=demo_password_hash,
-            role=UserRole.USER,
-            is_active=True
-        )
-
-        session.add(admin_user)
-        session.add(demo_user)
+        # Create demo user if doesn't exist
+        if not demo_exists:
+            demo_user = User(
+                id=uuid4(),
+                email="demo@evently.com",
+                full_name="Demo User",
+                phone="+1987654321",
+                password_hash=demo_password_hash,
+                role=UserRole.USER,
+                is_active=True
+            )
+            session.add(demo_user)
+        else:
+            demo_user = demo_exists
 
         # Create demo venues
         venue1 = Venue(
