@@ -375,6 +375,43 @@ async def readiness():
     return {"status": "ready"}
 
 
+@app.get("/demo/status")
+async def demo_status():
+    """Check if demo data has been seeded successfully"""
+    from app.core.database import async_session
+
+    try:
+        async with async_session() as session:
+            # Check users
+            user_result = await session.execute(select(User).limit(1))
+            users_exist = user_result.scalar_one_or_none() is not None
+
+            # Check venues
+            venue_result = await session.execute(select(Venue).limit(1))
+            venues_exist = venue_result.scalar_one_or_none() is not None
+
+            # Check events
+            event_result = await session.execute(select(Event).limit(1))
+            events_exist = event_result.scalar_one_or_none() is not None
+
+            return {
+                "demo_data_status": "ready" if (users_exist and venues_exist and events_exist) else "pending",
+                "users_seeded": users_exist,
+                "venues_seeded": venues_exist,
+                "events_seeded": events_exist,
+                "demo_credentials": {
+                    "admin": "admin@evently.com / Admin123!",
+                    "user": "demo@evently.com / Demo123!"
+                }
+            }
+    except Exception as e:
+        return {
+            "demo_data_status": "error",
+            "error": str(e),
+            "message": "Demo data seeding may still be in progress"
+        }
+
+
 @app.get("/")
 async def root():
     """Root endpoint with API information and evaluator guide"""
