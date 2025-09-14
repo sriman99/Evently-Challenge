@@ -22,6 +22,9 @@ from app.models.venue import Venue
 from app.models.event import Event, EventStatus
 from app.models.seat import Seat, SeatStatus
 from app.models.saga_state import SagaState
+from app.models.notification import Notification, NotificationType, NotificationStatus
+from app.models.booking import Booking, BookingStatus, BookingSeat
+from app.models.payment import Payment, PaymentStatus, PaymentMethod
 from app.core.security import get_password_hash
 from sqlalchemy import select
 from datetime import datetime, timedelta
@@ -191,7 +194,79 @@ async def auto_seed_demo_data():
                         session.add(seat)
 
         await session.commit()
-        logger.info("Auto-seeding completed successfully - Demo data created")
+
+        # Create demo notifications
+        welcome_notification = Notification(
+            user_id=demo_user.id,
+            type=NotificationType.EMAIL,
+            content="Welcome to Evently! Your account has been created successfully.",
+            status=NotificationStatus.SENT,
+            sent_at=datetime.now()
+        )
+
+        event_notification = Notification(
+            user_id=demo_user.id,
+            type=NotificationType.EMAIL,
+            content="Don't miss 'Broadway Musical Night' starting in 30 days! Book your tickets now.",
+            status=NotificationStatus.SENT,
+            sent_at=datetime.now()
+        )
+
+        admin_notification = Notification(
+            user_id=admin_user.id,
+            type=NotificationType.EMAIL,
+            content="Admin Dashboard: New events have been created and are ready for booking.",
+            status=NotificationStatus.SENT,
+            sent_at=datetime.now()
+        )
+
+        session.add(welcome_notification)
+        session.add(event_notification)
+        session.add(admin_notification)
+
+        # Create a sample demo booking with payment
+        demo_booking = Booking(
+            id=uuid4(),
+            user_id=demo_user.id,
+            event_id=event1.id,
+            quantity=2,
+            total_amount=Decimal("400.00"),
+            status=BookingStatus.CONFIRMED,
+            booking_reference="DEMO-" + str(uuid4())[:8].upper(),
+            confirmed_at=datetime.now() - timedelta(days=5)
+        )
+        session.add(demo_booking)
+
+        # Get first two seats for the booking
+        first_seats = await session.execute(
+            select(Seat).where(Seat.event_id == event1.id).limit(2)
+        )
+        seats = first_seats.scalars().all()
+
+        for seat in seats:
+            booking_seat = BookingSeat(
+                booking_id=demo_booking.id,
+                seat_id=seat.id
+            )
+            session.add(booking_seat)
+            # Update seat status to booked
+            seat.status = SeatStatus.BOOKED
+
+        # Create payment for the booking
+        demo_payment = Payment(
+            booking_id=demo_booking.id,
+            amount=Decimal("400.00"),
+            currency="USD",
+            status=PaymentStatus.COMPLETED,
+            payment_method=PaymentMethod.CREDIT_CARD,
+            gateway_reference="demo_payment_" + str(uuid4())[:12],
+            gateway_response="Payment completed successfully",
+            processed_at=datetime.now() - timedelta(days=5)
+        )
+        session.add(demo_payment)
+
+        await session.commit()
+        logger.info("Auto-seeding completed successfully - Demo data created with notifications and payments")
 
 
 @asynccontextmanager
