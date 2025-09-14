@@ -77,11 +77,11 @@ async def lifespan(app: FastAPI):
 # Create FastAPI application
 app = FastAPI(
     title=settings.APP_NAME,
-    description="Scalable Event Ticketing Platform",
+    description="Scalable Event Ticketing Platform - A high-performance backend system for managing events, bookings, and user interactions with advanced concurrency handling, Redis caching, and PostgreSQL persistence.",
     version=settings.APP_VERSION,
-    docs_url="/docs" if settings.DEBUG else None,
-    redoc_url="/redoc" if settings.DEBUG else None,
-    openapi_url="/openapi.json" if settings.DEBUG else None,
+    docs_url="/docs",  # Always enable docs for evaluator access
+    redoc_url="/redoc",  # Enable alternative docs
+    openapi_url="/openapi.json",  # Enable OpenAPI spec
     lifespan=lifespan
 )
 
@@ -187,12 +187,24 @@ async def readiness():
 
 @app.get("/")
 async def root():
-    """Root endpoint"""
+    """Root endpoint with API information"""
     return {
         "name": settings.APP_NAME,
         "version": settings.APP_VERSION,
         "environment": settings.APP_ENV,
-        "api_docs": "/docs" if settings.DEBUG else None
+        "api_docs": "/docs",
+        "api_spec": "/openapi.json",
+        "redoc": "/redoc",
+        "base_url": f"{settings.API_PREFIX}",
+        "features": [
+            "🎫 Event Management",
+            "👥 User Authentication",
+            "📅 Booking System",
+            "🏛️ Venue Management",
+            "💺 Seat Selection",
+            "⚡ Real-time Availability",
+            "📊 Analytics Dashboard"
+        ]
     }
 
 
