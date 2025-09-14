@@ -94,11 +94,6 @@ class EventListResponse(BaseSchema):
     max_price: Optional[Decimal] = None
 
 
-class EventDetail(EventResponse):
-    """Detailed event response with seats"""
-    seats: Optional[List["EventSeatResponse"]] = []
-
-
 class EventSeatResponse(BaseSchema):
     """Event seat response schema"""
     id: UUID
@@ -107,6 +102,11 @@ class EventSeatResponse(BaseSchema):
     seat_number: Optional[str] = None
     price: Decimal
     status: str
+
+
+class EventDetail(EventResponse):
+    """Detailed event response with seats"""
+    seats: Optional[List[EventSeatResponse]] = []
 
 
 class SeatAvailability(BaseSchema):

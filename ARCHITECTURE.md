@@ -1,453 +1,539 @@
-# 🏗️ Evently System Architecture
+# 🏗️ Evently Architecture Documentation
 
-## High-Level Architecture
+## High-Level System Architecture
 
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                        EVENTLY ARCHITECTURE                         │
+└─────────────────────────────────────────────────────────────────────┘
+
+┌──────────────┐    ┌─────────────────────────────────────────────────┐
+│   Frontend   │────│              API Gateway                        │
+│  (Not impl.) │    │         Rate Limiting & Auth                    │
+└──────────────┘    └─────────────────────────────────────────────────┘
+                                            │
+                    ┌───────────────────────────────────────────────────┐
+                    │            FastAPI Application Server             │
+                    │  ┌─────────────────────────────────────────────┐  │
+                    │  │           Authentication Layer              │  │
+                    │  │     JWT + Role-Based Access Control        │  │
+                    │  └─────────────────────────────────────────────┘  │
+                    │  ┌─────────────────────────────────────────────┐  │
+                    │  │               API Endpoints                 │  │
+                    │  │  Auth │ Events │ Bookings │ Admin │ WS     │  │
+                    │  └─────────────────────────────────────────────┘  │
+                    │  ┌─────────────────────────────────────────────┐  │
+                    │  │              Business Logic                 │  │
+                    │  │    Saga Orchestrator │ Circuit Breaker     │  │
+                    │  └─────────────────────────────────────────────┘  │
+                    │  ┌─────────────────────────────────────────────┐  │
+                    │  │             Service Layer                   │  │
+                    │  │  Booking │ Event │ User │ Analytics Service │  │
+                    │  └─────────────────────────────────────────────┘  │
+                    └───────────────────────────────────────────────────┘
+                             │                          │
+          ┌──────────────────────────────┐    ┌─────────────────────────┐
+          │      Cache Layer (Redis)     │    │   Persistence Layer    │
+          │  ┌─────────────────────────┐ │    │  ┌───────────────────┐ │
+          │  │   Distributed Locks    │ │    │  │   PostgreSQL DB   │ │
+          │  │   Session Storage      │ │    │  │                   │ │
+          │  │   Response Caching     │ │    │  │   Users           │ │
+          │  │   Rate Limit State     │ │    │  │   Events          │ │
+          │  │   Booking Reservations │ │    │  │   Bookings        │ │
+          │  └─────────────────────────┘ │    │  │   Seats           │ │
+          └──────────────────────────────┘    │  │   Venues          │ │
+                                              │  │   Saga States     │ │
+          ┌──────────────────────────────┐    │  └───────────────────┘ │
+          │    Message Queue (RabbitMQ)  │    └─────────────────────────┘
+          │  ┌─────────────────────────┐ │              │
+          │  │   Async Tasks          │ │    ┌─────────────────────────┐
+          │  │   Notification Queue   │ │    │    Monitoring Stack    │
+          │  │   Booking Workflows    │ │    │  ┌───────────────────┐ │
+          │  │   Payment Processing   │ │    │  │   Prometheus      │ │
+          │  └─────────────────────────┘ │    │  │   Health Checks   │ │
+          └──────────────────────────────┘    │  │   Metrics         │ │
+                                              │  └───────────────────┘ │
+                                              └─────────────────────────┘
+```
+
+## Core System Components
+
+### 1. API Layer (FastAPI)
+**Responsibilities:**
+- RESTful API endpoints with OpenAPI documentation
+- WebSocket connections for real-time updates
+- Request validation and response serialization
+- Authentication and authorization middleware
+- Rate limiting and security headers
+
+**Key Features:**
+- Async/await pattern for high concurrency
+- Automatic OpenAPI/Swagger documentation
+- Pydantic models for data validation
+- CORS middleware for frontend integration
+- Comprehensive error handling
+
+### 2. Authentication & Security
+**Implementation:**
+- JWT tokens with HS256/RS256 algorithms
+- Role-based access control (User, Organizer, Admin)
+- Token blacklisting for secure logout
+- Request rate limiting with sliding window
+- Input validation and sanitization
+
+**Security Measures:**
+- SQL injection prevention with parameterized queries
+- CSRF protection with secure headers
+- Password hashing with bcrypt
+- Environment-based configuration
+- Comprehensive audit logging
+
+### 3. Business Logic Layer
+
+#### Saga Pattern Implementation
+```python
+class BookingSaga:
+    def __init__(self, orchestrator):
+        self.orchestrator = orchestrator
+        self.state = SagaState.STARTED
+
+    async def execute(self):
+        try:
+            # Step 1: Reserve seats
+            await self.reserve_seats()
+
+            # Step 2: Create booking
+            await self.create_booking()
+
+            # Step 3: Process payment
+            await self.process_payment()
+
+            # Step 4: Confirm booking
+            await self.confirm_booking()
+
+        except Exception:
+            await self.compensate()
+```
+
+#### Circuit Breaker Pattern
+```python
+@circuit_breaker(failure_threshold=5, reset_timeout=60)
+async def external_payment_service():
+    # External service call with fallback
+    pass
+```
+
+### 4. Concurrency Control Architecture
+
+#### Multi-Layer Protection Strategy
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                         CDN / CloudFlare                         │
-│                    (Static Assets, Edge Caching)                 │
-└──────────────────────────────┬──────────────────────────────────┘
-                               │
-┌──────────────────────────────▼──────────────────────────────────┐
-│                      NGINX Load Balancer                         │
-│                    (SSL Termination, Routing)                    │
-└──────────────────────────────┬──────────────────────────────────┘
-                               │
-┌──────────────────────────────▼──────────────────────────────────┐
-│                     API Gateway (Rate Limiting)                  │
-└──────────────────────────────┬──────────────────────────────────┘
-                               │
-        ┌──────────────────────┼──────────────────────┐
-        │                      │                      │
-┌───────▼────────┐    ┌────────▼────────┐   ┌────────▼────────┐
-│  FastAPI App   │    │  FastAPI App    │   │  FastAPI App    │
-│   Instance 1   │    │   Instance 2    │   │   Instance 3    │
-└───────┬────────┘    └────────┬────────┘   └────────┬────────┘
-        │                      │                      │
-        └──────────────────────┼──────────────────────┘
-                               │
-        ┌──────────────────────┼──────────────────────┐
-        │                      │                      │
-┌───────▼────────┐    ┌────────▼────────┐   ┌────────▼────────┐
-│  PostgreSQL    │    │     Redis       │   │   RabbitMQ      │
-│   (Primary)    │    │  (Cache/Lock)   │   │  (Message Queue)│
-└───────┬────────┘    └─────────────────┘   └─────────────────┘
-        │
-┌───────▼────────┐
-│  PostgreSQL    │
-│   (Replica)    │
-└────────────────┘
+│                    CONCURRENCY CONTROL LAYERS                   │
+├─────────────────────────────────────────────────────────────────┤
+│  Layer 1: Application Level                                     │
+│  ├─ Input validation and business rules                         │
+│  ├─ Booking limits per user                                     │
+│  └─ Event capacity checks                                       │
+├─────────────────────────────────────────────────────────────────┤
+│  Layer 2: Redis Distributed Locks                              │
+│  ├─ Seat reservation locks (TTL: 5 minutes)                    │
+│  ├─ User booking locks (prevent double booking)                │
+│  └─ Event capacity locks (atomic operations)                   │
+├─────────────────────────────────────────────────────────────────┤
+│  Layer 3: Database Transactions                                │
+│  ├─ PostgreSQL SELECT FOR UPDATE                               │
+│  ├─ Atomic booking operations                                  │
+│  └─ Constraint enforcement                                     │
+├─────────────────────────────────────────────────────────────────┤
+│  Layer 4: Database Constraints                                 │
+│  ├─ CHECK constraints on capacity                              │
+│  ├─ Foreign key constraints                                    │
+│  └─ Unique constraints on critical fields                     │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
-## Component Architecture
+#### Seat Reservation Algorithm
+```python
+async def reserve_seats(self, event_id: UUID, seat_ids: List[UUID], user_id: UUID):
+    lock_key = f"booking:event:{event_id}:user:{user_id}"
 
-### 1. API Gateway Layer
-- **Purpose**: Entry point for all client requests
-- **Responsibilities**:
-  - Rate limiting (Token Bucket algorithm)
-  - Request routing
-  - Authentication verification
-  - Request/Response logging
-  - DDoS protection
+    async with distributed_lock(lock_key, timeout=300):
+        # Step 1: Check seat availability
+        available_seats = await self.get_available_seats(event_id, seat_ids)
 
-### 2. Application Layer (FastAPI)
-- **Purpose**: Business logic processing
-- **Components**:
-  - REST API endpoints
-  - WebSocket connections
-  - Authentication middleware
-  - Request validation
-  - Response serialization
+        if len(available_seats) != len(seat_ids):
+            raise SeatUnavailableError("Some seats are no longer available")
 
-### 3. Service Layer
-- **Purpose**: Core business logic
-- **Services**:
-  - **AuthService**: User authentication and authorization
-  - **EventService**: Event management and queries
-  - **BookingService**: Booking creation and management
-  - **PaymentService**: Payment processing
-  - **NotificationService**: Email/SMS notifications
-  - **AnalyticsService**: Data aggregation and reporting
+        # Step 2: Create Redis reservation
+        reservation_data = {
+            "user_id": str(user_id),
+            "seat_ids": [str(sid) for sid in seat_ids],
+            "timestamp": datetime.utcnow().isoformat(),
+            "expires_at": (datetime.utcnow() + timedelta(minutes=5)).isoformat()
+        }
 
-### 4. Data Layer
-- **PostgreSQL**: Primary data store
-  - User data
-  - Event information
-  - Booking records
-  - Transaction history
+        await redis_client.setex(
+            f"reservation:{event_id}:{user_id}",
+            300,
+            json.dumps(reservation_data)
+        )
 
-- **Redis**: Cache and distributed locking
-  - Session storage
-  - Distributed locks for seat reservation
-  - Cached event data
-  - Real-time seat availability
+        # Step 3: Update seat status in database
+        async with database.transaction():
+            await self.update_seat_status(seat_ids, SeatStatus.RESERVED)
 
-- **RabbitMQ**: Message queue
-  - Async notification processing
-  - Analytics data processing
-  - Background job queue
-
-## Concurrency Control Architecture
-
-### Multi-Layer Approach
-
-```
-Layer 1: Redis Distributed Lock
-├── Acquire lock with TTL (5 minutes)
-├── Unique lock key per seat
-└── Automatic expiration
-
-Layer 2: Database Optimistic Locking
-├── Version field on seat records
-├── Check version on update
-└── Retry on version mismatch
-
-Layer 3: Database Transaction Isolation
-├── SERIALIZABLE isolation level
-├── Atomic operations
-└── Automatic rollback on conflict
-```
-
-### Booking Flow Sequence
-
-```
-1. User Selection
-   └── Select seats from UI
-
-2. Lock Acquisition
-   ├── Redis lock per seat (TTL: 5 min)
-   └── Return lock tokens
-
-3. Availability Check
-   ├── Database query
-   └── Validate all seats available
-
-4. Reservation Creation
-   ├── Create pending booking
-   ├── Update seat status to 'reserved'
-   └── Set expiration timer
-
-5. Payment Processing
-   ├── Initialize payment
-   ├── Process with gateway
-   └── Await confirmation
-
-6. Booking Confirmation
-   ├── Update booking status
-   ├── Update seat status to 'booked'
-   └── Generate booking code
-
-7. Lock Release
-   ├── Remove Redis locks
-   └── Clean up temporary data
-
-8. Notification
-   ├── Queue email notification
-   ├── Queue SMS notification
-   └── Send real-time update via WebSocket
+        return reservation_data
 ```
 
 ## Database Architecture
 
-### Partitioning Strategy
+### Schema Design Philosophy
+- **Normalized Structure**: Eliminates data redundancy
+- **Referential Integrity**: Foreign key constraints ensure consistency
+- **Performance Optimization**: Strategic indexing on frequently queried columns
+- **Data Validation**: CHECK constraints prevent invalid states
 
+### Key Entity Relationships
+```
+Users (1:N) ────────────── Bookings (N:1) ────────────── Events
+  │                           │                           │
+  │                           │                           │
+  └── (1:N) UserSessions      └── (1:N) BookingSeats     └── (1:N) Seats
+                                         │                           │
+                                         │                           │
+                                         └────────── (N:1) ──────────┘
+
+Events (N:1) ────────────── Venues
+  │
+  └── (1:N) ────────────── EventAnalytics
+
+Users (1:N) ────────────── SagaStates (audit trail)
+```
+
+### Database Optimizations
+
+#### Indexing Strategy
 ```sql
--- Events table partitioned by month
-CREATE TABLE events (
-    id UUID PRIMARY KEY,
-    start_time TIMESTAMP,
-    ...
-) PARTITION BY RANGE (start_time);
+-- High-frequency query optimization
+CREATE INDEX idx_events_status_start_time ON events(status, start_time);
+CREATE INDEX idx_seats_event_status ON seats(event_id, status);
+CREATE INDEX idx_bookings_user_status ON bookings(user_id, status);
+CREATE INDEX idx_bookings_event_created ON bookings(event_id, created_at);
 
--- Create monthly partitions
-CREATE TABLE events_2024_01 PARTITION OF events
-    FOR VALUES FROM ('2024-01-01') TO ('2024-02-01');
+-- Unique constraints for business rules
+CREATE UNIQUE INDEX idx_seats_event_section_row_number
+ON seats(event_id, section, row, seat_number);
+
+-- Partial indexes for specific queries
+CREATE INDEX idx_available_seats
+ON seats(event_id) WHERE status = 'AVAILABLE';
 ```
 
-### Indexing Strategy
-
+#### Database Constraints
 ```sql
--- Performance-critical indexes
-CREATE INDEX idx_seats_availability
-    ON seats(event_id, status)
-    WHERE status = 'available';
+-- Business rule enforcement
+ALTER TABLE events ADD CONSTRAINT check_capacity_positive
+CHECK (capacity > 0);
 
-CREATE INDEX idx_bookings_user_status
-    ON bookings(user_id, status);
+ALTER TABLE events ADD CONSTRAINT check_available_seats_valid
+CHECK (available_seats >= 0 AND available_seats <= capacity);
 
-CREATE INDEX idx_events_upcoming
-    ON events(start_time)
-    WHERE status = 'upcoming';
+ALTER TABLE bookings ADD CONSTRAINT check_booking_amount_positive
+CHECK (total_amount >= 0);
+
+-- Data consistency
+ALTER TABLE seats ADD CONSTRAINT check_seat_price_positive
+CHECK (price >= 0);
 ```
 
-### Connection Pooling
+## Scalability Architecture
 
+### Horizontal Scaling Strategy
+
+#### Stateless Application Design
+- All session data stored in Redis
+- Database connection pooling
+- Load balancer friendly (no sticky sessions)
+- Container-ready deployment
+
+#### Caching Architecture
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                        CACHING LAYERS                           │
+├─────────────────────────────────────────────────────────────────┤
+│  L1: Application Cache (In-Memory)                              │
+│  ├─ User session data                                           │
+│  ├─ Frequently accessed configuration                           │
+│  └─ Short-term computation results                              │
+├─────────────────────────────────────────────────────────────────┤
+│  L2: Redis Cache (Distributed)                                 │
+│  ├─ API response caching (TTL: 5-300 seconds)                  │
+│  ├─ Database query results                                     │
+│  ├─ Event listings with filtering                              │
+│  └─ User authentication tokens                                 │
+├─────────────────────────────────────────────────────────────────┤
+│  L3: Database Query Optimization                               │
+│  ├─ Connection pooling                                         │
+│  ├─ Query result caching                                       │
+│  └─ Read replicas (future enhancement)                         │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+#### Cache Invalidation Strategy
 ```python
-# PgBouncer configuration
-pool_mode = transaction
-max_client_conn = 1000
-default_pool_size = 25
-reserve_pool_size = 5
+class CacheManager:
+    async def invalidate_events_cache(self):
+        """Invalidate all event-related cache entries"""
+        patterns = [
+            f"{self.cache_version}:events:*",
+            f"{self.cache_version}:event_detail:*",
+            f"{self.cache_version}:event_seats:*"
+        ]
+
+        for pattern in patterns:
+            keys = await self.redis.keys(pattern)
+            if keys:
+                await self.redis.delete(*keys)
 ```
 
-## Caching Architecture
+### Performance Optimizations
 
-### Cache Hierarchy
-
-```
-L1: CDN Cache (CloudFlare)
-├── Static assets (permanent)
-├── Event images (1 hour)
-└── API responses (5 minutes)
-
-L2: Redis Cache
-├── Event details (5 minutes)
-├── Seat availability (10 seconds)
-├── User sessions (30 minutes)
-└── Analytics data (1 minute)
-
-L3: Application Cache
-├── Configuration (until restart)
-├── Venue layouts (1 hour)
-└── Frequently accessed data (5 minutes)
-```
-
-### Cache Invalidation
-
+#### Database Connection Management
 ```python
-# Event-based invalidation
-on_booking_created → invalidate event_seats_cache
-on_event_updated → invalidate event_details_cache
-on_payment_confirmed → invalidate booking_cache
+# Async connection pool configuration
+DATABASE_CONFIG = {
+    "pool_size": 20,
+    "max_overflow": 40,
+    "pool_timeout": 30,
+    "pool_recycle": 3600,
+    "pool_pre_ping": True
+}
 ```
 
-## Scalability Design
+#### Query Optimization
+```python
+# Optimized event listing with eager loading
+async def get_events_optimized(filters):
+    query = (
+        select(Event)
+        .options(
+            selectinload(Event.venue),
+            selectinload(Event.seats)
+        )
+        .where(build_filters(filters))
+        .order_by(Event.start_time)
+        .limit(50)
+    )
 
-### Horizontal Scaling
-
-```yaml
-# Kubernetes deployment
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: evently-api
-spec:
-  replicas: 3
-  strategy:
-    type: RollingUpdate
-  template:
-    spec:
-      containers:
-      - name: api
-        resources:
-          requests:
-            memory: "512Mi"
-            cpu: "500m"
-          limits:
-            memory: "1Gi"
-            cpu: "1000m"
+    result = await db.execute(query)
+    return result.scalars().all()
 ```
 
-### Auto-scaling Rules
+## Fault Tolerance & Resilience
 
-```yaml
-# HPA configuration
-metrics:
-- type: Resource
-  resource:
-    name: cpu
-    target:
-      type: Utilization
-      averageUtilization: 70
-- type: Resource
-  resource:
-    name: memory
-    target:
-      type: Utilization
-      averageUtilization: 80
+### Circuit Breaker Implementation
+```python
+class CircuitBreaker:
+    def __init__(self, failure_threshold=5, reset_timeout=60):
+        self.failure_threshold = failure_threshold
+        self.reset_timeout = reset_timeout
+        self.failure_count = 0
+        self.last_failure_time = None
+        self.state = CircuitState.CLOSED
+
+    async def call(self, func, *args, **kwargs):
+        if self.state == CircuitState.OPEN:
+            if self._should_attempt_reset():
+                self.state = CircuitState.HALF_OPEN
+            else:
+                raise CircuitOpenError("Circuit breaker is open")
+
+        try:
+            result = await func(*args, **kwargs)
+            self._on_success()
+            return result
+        except Exception as e:
+            self._on_failure()
+            raise e
+```
+
+### Error Handling Strategy
+```python
+# Structured error responses
+class APIError(Exception):
+    def __init__(self, message: str, error_code: str, status_code: int = 400):
+        self.message = message
+        self.error_code = error_code
+        self.status_code = status_code
+
+@app.exception_handler(APIError)
+async def api_error_handler(request: Request, exc: APIError):
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={
+            "success": False,
+            "error": {
+                "code": exc.error_code,
+                "message": exc.message,
+                "request_id": request.state.request_id
+            }
+        }
+    )
+```
+
+## Monitoring & Observability
+
+### Health Check Architecture
+```python
+@router.get("/health/status")
+async def comprehensive_health_check():
+    checks = {
+        "database": await check_database_health(),
+        "redis": await check_redis_health(),
+        "external_services": await check_external_services()
+    }
+
+    overall_status = "healthy" if all(checks.values()) else "degraded"
+
+    return {
+        "status": overall_status,
+        "environment": settings.APP_ENV,
+        "version": settings.APP_VERSION,
+        "checks": checks,
+        "timestamp": datetime.utcnow().isoformat()
+    }
+```
+
+### Metrics Collection
+```python
+# Prometheus metrics integration
+REQUEST_COUNT = Counter(
+    "app_requests_total",
+    "Total requests",
+    ["method", "endpoint", "status"]
+)
+
+REQUEST_DURATION = Histogram(
+    "app_request_duration_seconds",
+    "Request duration",
+    ["method", "endpoint"]
+)
+
+BOOKING_OPERATIONS = Counter(
+    "booking_operations_total",
+    "Booking operations",
+    ["operation", "status"]
+)
 ```
 
 ## Security Architecture
 
 ### Authentication Flow
-
 ```
-1. User Login
-   └── POST /auth/login with credentials
+1. User Login Request
+   ├─ Credentials validation
+   ├─ Password verification (bcrypt)
+   ├─ JWT token generation
+   └─ Session creation in Redis
 
-2. Credential Validation
-   ├── Verify email exists
-   └── Check password hash (bcrypt)
+2. Protected Request
+   ├─ JWT token extraction
+   ├─ Token validation & signature verification
+   ├─ Blacklist check in Redis
+   ├─ Role-based authorization
+   └─ Request processing
 
-3. Token Generation
-   ├── Create JWT access token (30 min)
-   ├── Create refresh token (7 days)
-   └── Store refresh token in Redis
-
-4. Token Usage
-   ├── Include in Authorization header
-   └── Validate on each request
-
-5. Token Refresh
-   ├── Use refresh token
-   └── Issue new access token
+3. User Logout
+   ├─ JWT token blacklisting
+   ├─ Session cleanup in Redis
+   └─ Response confirmation
 ```
 
-### API Security
+### Data Protection
+- **Encryption at Rest**: Database encryption
+- **Encryption in Transit**: TLS 1.3 for all connections
+- **Sensitive Data Handling**: No plaintext storage of passwords
+- **Audit Trail**: Complete logging of all critical operations
 
-```python
-# Rate limiting configuration
-RATE_LIMITS = {
-    "/api/v1/events": "100/minute",
-    "/api/v1/bookings": "10/minute/user",
-    "/api/v1/admin/*": "1000/minute"
-}
+## Deployment Architecture
 
-# CORS configuration
-CORS_ORIGINS = [
-    "https://evently.com",
-    "https://app.evently.com"
-]
+### Container Strategy
+```dockerfile
+FROM python:3.11-slim
+
+# Multi-stage build for optimization
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY app/ app/
+EXPOSE 8000
+
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
 ```
 
-## Monitoring & Observability
-
-### Metrics Collection
-
-```python
-# Prometheus metrics
-request_count = Counter('api_requests_total')
-request_duration = Histogram('api_request_duration_seconds')
-active_bookings = Gauge('active_bookings_total')
-```
-
-### Logging Strategy
-
-```python
-# Structured logging
-{
-    "timestamp": "2024-01-15T10:30:00Z",
-    "level": "INFO",
-    "service": "booking-service",
-    "trace_id": "abc123",
-    "user_id": "user_456",
-    "action": "booking_created",
-    "event_id": "event_789",
-    "duration_ms": 45
-}
-```
-
-### Health Checks
-
-```python
-# Health check endpoints
-GET /health/live    # Kubernetes liveness probe
-GET /health/ready   # Kubernetes readiness probe
-GET /health/startup # Kubernetes startup probe
-```
-
-## Disaster Recovery
-
-### Backup Strategy
-
-```bash
-# Database backup
-pg_dump evently > backup_$(date +%Y%m%d).sql
-
-# Redis backup
-redis-cli BGSAVE
-
-# Automated backups every 6 hours
-0 */6 * * * /scripts/backup.sh
-```
-
-### Failover Plan
-
-1. **Database Failover**: Automatic promotion of read replica
-2. **Redis Failover**: Redis Sentinel for automatic failover
-3. **Application Failover**: Kubernetes handles pod failures
-4. **Regional Failover**: Multi-region deployment with DNS failover
-
-## Performance Optimization
-
-### Query Optimization
-
-```sql
--- Use EXPLAIN ANALYZE for query planning
-EXPLAIN ANALYZE
-SELECT s.* FROM seats s
-WHERE s.event_id = $1
-  AND s.status = 'available'
-ORDER BY s.price, s.section, s.row;
-```
-
-### Connection Optimization
-
-```python
-# Async database operations
-async with db.transaction():
-    await seat_repo.reserve_seats(seat_ids)
-    await booking_repo.create_booking(booking_data)
-```
-
-### Caching Strategy
-
-```python
-@cache(ttl=300)
-async def get_event_details(event_id: str):
-    return await event_repository.get_by_id(event_id)
-```
-
-## Development & Deployment
-
-### CI/CD Pipeline
-
+### Environment Configuration
 ```yaml
-# GitHub Actions workflow
-steps:
-  - Test: Run pytest
-  - Lint: Run flake8 and mypy
-  - Build: Docker image
-  - Deploy: Push to registry
-  - Release: Deploy to Kubernetes
+# docker-compose.yml
+version: '3.8'
+services:
+  app:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://user:pass@db:5432/evently
+      - REDIS_URL=redis://redis:6379/0
+    depends_on:
+      - db
+      - redis
 ```
 
-### Environment Management
+## Trade-offs & Design Decisions
 
-```bash
-# Environment-specific configs
-├── config/
-│   ├── development.yaml
-│   ├── staging.yaml
-│   └── production.yaml
-```
+### 1. Concurrency Control
+**Decision**: Multi-layer approach (Redis + PostgreSQL)
+**Trade-off**: Slight complexity increase for maximum data consistency
+**Rationale**: Prevents overselling while maintaining high performance
 
-## Technology Decisions & Trade-offs
+### 2. Caching Strategy
+**Decision**: Cache-aside pattern with validation
+**Trade-off**: Additional cache management complexity
+**Rationale**: Significant performance improvement for read-heavy workloads
 
-### Why FastAPI?
-- **Pros**: High performance, async support, automatic API docs
-- **Cons**: Smaller ecosystem than Django/Flask
-- **Decision**: Performance and async capabilities outweigh ecosystem size
+### 3. Database Design
+**Decision**: Normalized schema with computed properties
+**Trade-off**: More complex queries vs. data consistency
+**Rationale**: Ensures data integrity and reduces storage redundancy
 
-### Why PostgreSQL?
-- **Pros**: ACID compliance, strong consistency, mature
-- **Cons**: Vertical scaling limitations
-- **Decision**: Consistency requirements mandate RDBMS
+### 4. Authentication Approach
+**Decision**: JWT with Redis blacklisting
+**Trade-off**: Stateless tokens vs. secure logout capability
+**Rationale**: Combines JWT benefits with proper session management
 
-### Why Redis?
-- **Pros**: Fast, distributed locking, pub/sub support
-- **Cons**: Memory limitations, persistence complexity
-- **Decision**: Speed and locking capabilities critical for bookings
+### 5. Error Handling
+**Decision**: Structured error responses with correlation IDs
+**Trade-off**: Additional complexity for debugging benefits
+**Rationale**: Improves troubleshooting and user experience
 
-### Why RabbitMQ?
-- **Pros**: Reliable delivery, routing flexibility
-- **Cons**: Additional infrastructure complexity
-- **Decision**: Reliable async processing worth the complexity
+## Future Scaling Considerations
 
-## Future Enhancements
+### Database Scaling
+- **Read Replicas**: Separate read/write operations
+- **Sharding**: Partition data by geographic region or event type
+- **Connection Pooling**: PgBouncer for connection management
 
-1. **GraphQL API**: Alternative to REST for flexible queries
-2. **Event Sourcing**: Complete audit trail of all changes
-3. **CQRS Pattern**: Separate read/write models for scale
-4. **Service Mesh**: Istio for advanced traffic management
-5. **Multi-region**: Global distribution for lower latency
+### Service Decomposition
+- **Event Service**: Event management and analytics
+- **Booking Service**: Booking operations and seat management
+- **User Service**: Authentication and user management
+- **Notification Service**: Real-time notifications and messaging
+
+### Infrastructure Enhancements
+- **CDN Integration**: Static asset caching
+- **Message Queue Scaling**: RabbitMQ clustering
+- **Cache Distribution**: Redis Cluster for high availability
+- **Monitoring Enhancement**: Distributed tracing with Jaeger
+
+---
+
+This architecture demonstrates a production-ready system capable of handling high concurrency, ensuring data consistency, and providing excellent performance while maintaining clear separation of concerns and scalability paths.
