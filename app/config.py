@@ -33,6 +33,13 @@ class Settings(BaseSettings):
 
     # Database
     DATABASE_URL: str  # Must be provided via environment
+
+    @field_validator('DATABASE_URL')
+    @classmethod
+    def validate_database_url(cls, v: str) -> str:
+        if v.startswith('postgresql://'):
+            v = v.replace('postgresql://', 'postgresql+asyncpg://', 1)
+        return v
     DB_POOL_SIZE: int = 20
     DB_MAX_OVERFLOW: int = 40
     DB_POOL_TIMEOUT: int = 30
