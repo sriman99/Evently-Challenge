@@ -12,11 +12,10 @@ class VenueBase(BaseModel):
     name: str = Field(..., min_length=1, max_length=255)
     address: str = Field(..., min_length=1, max_length=500)
     city: str = Field(..., min_length=1, max_length=100)
-    state: str = Field(..., min_length=2, max_length=50)
-    postal_code: str = Field(..., min_length=1, max_length=20)
+    state: Optional[str] = Field(None, min_length=2, max_length=50)
+    postal_code: Optional[str] = Field(None, min_length=1, max_length=20)
     country: str = Field(..., min_length=1, max_length=100)
     capacity: int = Field(..., gt=0)
-    description: Optional[str] = None
 
 
 class VenueCreate(VenueBase):
@@ -31,7 +30,6 @@ class VenueUpdate(BaseModel):
     postal_code: Optional[str] = Field(None, min_length=1, max_length=20)
     country: Optional[str] = Field(None, min_length=1, max_length=100)
     capacity: Optional[int] = Field(None, gt=0)
-    description: Optional[str] = None
 
 
 class VenueResponse(VenueBase):

@@ -122,6 +122,7 @@ async def auto_seed_demo_data():
             address="123 Main St, New York, NY 10001",
             city="New York",
             state="NY",
+            postal_code="10001",
             country="USA",
             capacity=500
         )
@@ -132,6 +133,7 @@ async def auto_seed_demo_data():
             address="456 Convention Ave, San Francisco, CA 94102",
             city="San Francisco",
             state="CA",
+            postal_code="94102",
             country="USA",
             capacity=1000
         )
