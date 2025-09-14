@@ -73,11 +73,8 @@ class PriceTier(BaseSchema):
 class EventResponse(EventBase, IDSchema, TimestampSchema):
     """Event response schema"""
     venue: VenueResponse
-    available_seats: int
     status: EventStatus
     price_tiers: Optional[List[PriceTier]] = []
-    min_price: Optional[Decimal] = None
-    max_price: Optional[Decimal] = None
 
 
 class EventListResponse(BaseSchema):
