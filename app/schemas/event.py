@@ -96,11 +96,11 @@ class EventListResponse(BaseSchema):
 
 class EventDetail(EventResponse):
     """Detailed event response with seats"""
-    seats: Optional[List["SeatResponse"]] = []
+    seats: Optional[List["EventSeatResponse"]] = []
 
 
-class SeatResponse(BaseSchema):
-    """Seat response schema"""
+class EventSeatResponse(BaseSchema):
+    """Event seat response schema"""
     id: UUID
     section: Optional[str] = None
     row: Optional[str] = None
