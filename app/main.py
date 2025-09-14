@@ -63,13 +63,22 @@ async def auto_seed_demo_data():
 
         logger.info("Empty database detected, starting auto-seeding...")
 
-        # Create demo users
+        try:
+            # Create demo users with password hashing
+            admin_password_hash = get_password_hash("Admin123!")
+            demo_password_hash = get_password_hash("Demo123!")
+        except Exception as e:
+            logger.error(f"Password hashing failed: {e}")
+            # Use a simple hash as fallback (not secure, but for demo purposes)
+            admin_password_hash = "hashed_admin_password"
+            demo_password_hash = "hashed_demo_password"
+
         admin_user = User(
             id=uuid4(),
             email="admin@evently.com",
             full_name="Admin User",
             phone="+1234567890",
-            hashed_password=get_password_hash("Admin123!"),
+            password_hash=admin_password_hash,
             role=UserRole.ADMIN,
             is_active=True
         )
@@ -79,7 +88,7 @@ async def auto_seed_demo_data():
             email="demo@evently.com",
             full_name="Demo User",
             phone="+1987654321",
-            hashed_password=get_password_hash("Demo123!"),
+            password_hash=demo_password_hash,
             role=UserRole.USER,
             is_active=True
         )
