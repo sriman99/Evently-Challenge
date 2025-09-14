@@ -1,0 +1,597 @@
+{
+  "info": {
+    "name": "Evently API",
+    "description": "Complete API collection for Evently ticketing platform",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{access_token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8000",
+      "type": "string"
+    },
+    {
+      "key": "api_prefix",
+      "value": "/api/v1",
+      "type": "string"
+    },
+    {
+      "key": "access_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "refresh_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "event_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "booking_id",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Register User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"newuser@example.com\",\n  \"password\": \"SecurePass123!\",\n  \"full_name\": \"New User\",\n  \"phone\": \"+1234567890\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}{{api_prefix}}/auth/register",
+              "host": ["{{base_url}}{{api_prefix}}"],
+              "path": ["auth", "register"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    pm.collectionVariables.set('access_token', response.access_token);",
+                  "    pm.collectionVariables.set('refresh_token', response.refresh_token);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "username",
+                  "value": "admin@evently.com"
+                },
+                {
+                  "key": "password",
+                  "value": "AdminPass123!"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}{{api_prefix}}/auth/login",
+              "host": ["{{base_url}}{{api_prefix}}"],
+              "path": ["auth", "login"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Refresh Token",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refresh_token\": \"{{refresh_token}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}{{api_prefix}}/auth/refresh",
+              "host": ["{{base_url}}{{api_prefix}}"],
+              "path": ["auth", "refresh"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{base_url}}{{api_prefix}}/auth/logout",
+              "host": ["{{base_url}}{{api_prefix}}"],
+              "path": ["auth", "logout"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Users",
+      "item": [
+        {
+          "name": "Get Profile",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}{{api_prefix}}/users/profile",
+              "host": ["{{base_url}}{{api_prefix}}"],
+              "path": ["users", "profile"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Profile",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"full_name\": \"Updated Name\",\n  \"phone\": \"+9876543210\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}{{api_prefix}}/users/profile",
+              "host": ["{{base_url}}{{api_prefix}}"],
+              "path": ["users", "profile"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get My Bookings",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}{{api_prefix}}/users/bookings",
+              "host": ["{{base_url}}{{api_prefix}}"],
+              "path": ["users", "bookings"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Events",
+      "item": [
+        {
+          "name": "Get All Events",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const events = pm.response.json();",
+                  "    if (events.length > 0) {",
+                  "        pm.collectionVariables.set('event_id', events[0].id);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}{{api_prefix}}/events/",
+              "host": ["{{base_url}}{{api_prefix}}"],
+              "path": ["events", ""],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "upcoming",
+                  "disabled": true
+                },
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "disabled": true
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Event Details",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}{{api_prefix}}/events/{{event_id}}",
+              "host": ["{{base_url}}{{api_prefix}}"],
+              "path": ["events", "{{event_id}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Event Seats",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}{{api_prefix}}/events/{{event_id}}/seats",
+              "host": ["{{base_url}}{{api_prefix}}"],
+              "path": ["events", "{{event_id}}", "seats"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Search Events",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}{{api_prefix}}/events/search?q=music",
+              "host": ["{{base_url}}{{api_prefix}}"],
+              "path": ["events", "search"],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "music"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Bookings",
+      "item": [
+        {
+          "name": "Create Booking",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const booking = pm.response.json();",
+                  "    pm.collectionVariables.set('booking_id', booking.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"event_id\": \"{{event_id}}\",\n  \"seat_ids\": [\"seat_id_1\", \"seat_id_2\"]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}{{api_prefix}}/bookings/",
+              "host": ["{{base_url}}{{api_prefix}}"],
+              "path": ["bookings", ""]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Booking Details",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}{{api_prefix}}/bookings/{{booking_id}}",
+              "host": ["{{base_url}}{{api_prefix}}"],
+              "path": ["bookings", "{{booking_id}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get My Bookings",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}{{api_prefix}}/bookings/my-bookings",
+              "host": ["{{base_url}}{{api_prefix}}"],
+              "path": ["bookings", "my-bookings"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Cancel Booking",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{base_url}}{{api_prefix}}/bookings/{{booking_id}}/cancel",
+              "host": ["{{base_url}}{{api_prefix}}"],
+              "path": ["bookings", "{{booking_id}}", "cancel"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Payments",
+      "item": [
+        {
+          "name": "Create Payment Intent",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{base_url}}{{api_prefix}}/payments/intent?booking_id={{booking_id}}&amount=150.00",
+              "host": ["{{base_url}}{{api_prefix}}"],
+              "path": ["payments", "intent"],
+              "query": [
+                {
+                  "key": "booking_id",
+                  "value": "{{booking_id}}"
+                },
+                {
+                  "key": "amount",
+                  "value": "150.00"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Process Payment",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"booking_id\": \"{{booking_id}}\",\n  \"amount\": 150.00,\n  \"payment_method_id\": \"pm_card_visa\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}{{api_prefix}}/payments/process",
+              "host": ["{{base_url}}{{api_prefix}}"],
+              "path": ["payments", "process"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Payment History",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}{{api_prefix}}/payments/history",
+              "host": ["{{base_url}}{{api_prefix}}"],
+              "path": ["payments", "history"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Notifications",
+      "item": [
+        {
+          "name": "Get Notifications",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}{{api_prefix}}/notifications/",
+              "host": ["{{base_url}}{{api_prefix}}"],
+              "path": ["notifications", ""],
+              "query": [
+                {
+                  "key": "unread_only",
+                  "value": "true",
+                  "disabled": true
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Mark as Read",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{base_url}}{{api_prefix}}/notifications/mark-read/{{notification_id}}",
+              "host": ["{{base_url}}{{api_prefix}}"],
+              "path": ["notifications", "mark-read", "{{notification_id}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Preferences",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}{{api_prefix}}/notifications/preferences",
+              "host": ["{{base_url}}{{api_prefix}}"],
+              "path": ["notifications", "preferences"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Unread Count",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}{{api_prefix}}/notifications/unread-count",
+              "host": ["{{base_url}}{{api_prefix}}"],
+              "path": ["notifications", "unread-count"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Venues",
+      "item": [
+        {
+          "name": "Get All Venues",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}{{api_prefix}}/venues/",
+              "host": ["{{base_url}}{{api_prefix}}"],
+              "path": ["venues", ""]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Venue Details",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}{{api_prefix}}/venues/{{venue_id}}",
+              "host": ["{{base_url}}{{api_prefix}}"],
+              "path": ["venues", "{{venue_id}}"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Admin",
+      "item": [
+        {
+          "name": "Get Analytics",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}{{api_prefix}}/admin/analytics",
+              "host": ["{{base_url}}{{api_prefix}}"],
+              "path": ["admin", "analytics"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Event",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"New Concert\",\n  \"description\": \"Amazing concert\",\n  \"venue_id\": \"{{venue_id}}\",\n  \"start_time\": \"2025-12-01T19:00:00Z\",\n  \"end_time\": \"2025-12-01T23:00:00Z\",\n  \"capacity\": 5000\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}{{api_prefix}}/admin/events",
+              "host": ["{{base_url}}{{api_prefix}}"],
+              "path": ["admin", "events"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}{{api_prefix}}/health/status",
+              "host": ["{{base_url}}{{api_prefix}}"],
+              "path": ["health", "status"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Root Endpoint",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/",
+              "host": ["{{base_url}}"],
+              "path": [""]
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}
