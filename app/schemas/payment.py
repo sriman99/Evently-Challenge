@@ -33,6 +33,17 @@ class PaymentCreate(BaseModel):
     payment_method_id: str
     return_url: Optional[str] = None
 
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "booking_id": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
+                "amount": "150.00",
+                "payment_method_id": "pm_card_visa_4242",
+                "return_url": "https://your-frontend.com/booking-success"
+            },
+            "description": "To create a payment: 1) First create a booking via POST /api/v1/bookings/, 2) Use the booking_id from that response"
+        }
+
 
 class PaymentIntentResponse(BaseModel):
     payment_intent_id: str

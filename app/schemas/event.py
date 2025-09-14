@@ -47,6 +47,19 @@ class EventCreate(EventBase):
     """Event creation schema"""
     seat_configuration: Optional[Dict[str, Any]] = None
 
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "name": "Jazz Night at the Blue Note",
+                "description": "An intimate evening of smooth jazz featuring local artists",
+                "venue_id": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
+                "start_time": "2025-10-15T20:00:00Z",
+                "end_time": "2025-10-15T23:00:00Z",
+                "capacity": 150
+            },
+            "description": "To create an event: 1) GET /api/v1/venues/ to get a venue_id, 2) Use the actual UUID from the venues response"
+        }
+
     @field_validator('end_time')
     def validate_end_time(cls, v, values):
         if 'start_time' in values.data and v <= values.data['start_time']:

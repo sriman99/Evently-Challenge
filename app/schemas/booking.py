@@ -26,9 +26,10 @@ class BookingCreate(BaseSchema):
     class Config:
         json_schema_extra = {
             "example": {
-                "event_id": "123e4567-e89b-12d3-a456-426614174000",
-                "seat_ids": ["456e7890-e89b-12d3-a456-426614174001", "456e7890-e89b-12d3-a456-426614174002"]
-            }
+                "event_id": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
+                "seat_ids": ["xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx", "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"]
+            },
+            "description": "To test booking: 1) GET /api/v1/events/ to see available events, 2) GET /api/v1/seats/{event_id} to see available seats, 3) Use the actual UUIDs from those responses"
         }
 
     @field_validator('seat_ids')

@@ -19,7 +19,18 @@ class VenueBase(BaseModel):
 
 
 class VenueCreate(VenueBase):
-    pass
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "name": "Music Hall",
+                "address": "789 Arts District, Chicago, IL 60601",
+                "city": "Chicago",
+                "state": "IL",
+                "postal_code": "60601",
+                "country": "USA",
+                "capacity": 800
+            }
+        }
 
 
 class VenueUpdate(BaseModel):
