@@ -23,6 +23,14 @@ class BookingCreate(BaseSchema):
     event_id: UUID
     seat_ids: List[UUID] = Field(..., min_items=1, max_items=settings.MAX_SEATS_PER_BOOKING)
 
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "event_id": "123e4567-e89b-12d3-a456-426614174000",
+                "seat_ids": ["456e7890-e89b-12d3-a456-426614174001", "456e7890-e89b-12d3-a456-426614174002"]
+            }
+        }
+
     @field_validator('seat_ids')
     def validate_unique_seats(cls, v):
         if len(v) != len(set(v)):

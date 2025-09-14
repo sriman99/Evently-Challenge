@@ -77,7 +77,25 @@ async def lifespan(app: FastAPI):
 # Create FastAPI application
 app = FastAPI(
     title=settings.APP_NAME,
-    description="Scalable Event Ticketing Platform - A high-performance backend system for managing events, bookings, and user interactions with advanced concurrency handling, Redis caching, and PostgreSQL persistence.",
+    description="""
+    🎫 **Evently - Scalable Event Ticketing Platform**
+
+    A high-performance backend system for managing events, bookings, and user interactions with:
+    - ⚡ Advanced concurrency handling
+    - 🔄 Redis caching for real-time seat availability
+    - 🗄️ PostgreSQL persistence with optimistic locking
+    - 🔐 JWT-based authentication
+    - 📊 Real-time analytics and monitoring
+
+    ## 🚀 Quick Start for Evaluators:
+    1. **Login**: Use `POST /api/v1/auth/login` with demo credentials
+    2. **Authorize**: Click the "Authorize" button and paste your access_token
+    3. **Test**: Try the protected endpoints like `GET /api/v1/events/`
+
+    ## 🔑 Demo Credentials:
+    - **Admin**: `admin@evently.com` / `Admin123!`
+    - **User**: `demo@evently.com` / `Demo123!`
+    """,
     version=settings.APP_VERSION,
     docs_url="/docs",  # Always enable docs for evaluator access
     redoc_url="/redoc",  # Enable alternative docs
@@ -187,23 +205,59 @@ async def readiness():
 
 @app.get("/")
 async def root():
-    """Root endpoint with API information"""
+    """Root endpoint with API information and evaluator guide"""
     return {
         "name": settings.APP_NAME,
         "version": settings.APP_VERSION,
         "environment": settings.APP_ENV,
-        "api_docs": "/docs",
-        "api_spec": "/openapi.json",
-        "redoc": "/redoc",
-        "base_url": f"{settings.API_PREFIX}",
-        "features": [
-            "🎫 Event Management",
-            "👥 User Authentication",
-            "📅 Booking System",
-            "🏛️ Venue Management",
-            "💺 Seat Selection",
-            "⚡ Real-time Availability",
-            "📊 Analytics Dashboard"
+        "status": "🚀 Live and Ready for Evaluation",
+
+        "📖_documentation": {
+            "swagger_ui": "/docs",
+            "redoc": "/redoc",
+            "openapi_spec": "/openapi.json"
+        },
+
+        "🔑_demo_credentials": {
+            "admin": {"email": "admin@evently.com", "password": "Admin123!"},
+            "user": {"email": "demo@evently.com", "password": "Demo123!"}
+        },
+
+        "🚀_quick_start": [
+            "1. Visit /docs for interactive API documentation",
+            "2. Login with demo credentials using POST /api/v1/auth/login",
+            "3. Copy the access_token from login response",
+            "4. Click 'Authorize' button in Swagger UI and paste token",
+            "5. Test protected endpoints like GET /api/v1/events/"
+        ],
+
+        "🎯_key_endpoints": {
+            "auth": f"{settings.API_PREFIX}/auth/login",
+            "events": f"{settings.API_PREFIX}/events/",
+            "bookings": f"{settings.API_PREFIX}/bookings/",
+            "users": f"{settings.API_PREFIX}/users/profile",
+            "admin": f"{settings.API_PREFIX}/admin/analytics"
+        },
+
+        "✨_features": [
+            "🎫 Event Management with Seat Selection",
+            "👥 JWT Authentication & Authorization",
+            "📅 Real-time Booking System",
+            "🏛️ Venue & Seat Management",
+            "⚡ Redis-cached Seat Availability",
+            "🔒 Optimistic Locking for Concurrency",
+            "📊 Admin Analytics Dashboard",
+            "🚦 Rate Limiting & Monitoring",
+            "🎭 Waitlist System (Bonus Feature)",
+            "💳 Payment Integration Ready"
+        ],
+
+        "💡_testing_tips": [
+            "Use the example data in request schemas",
+            "Try concurrent booking with multiple browser tabs",
+            "Check real-time seat availability updates",
+            "Test admin vs user role permissions",
+            "Monitor the /health/ready endpoint"
         ]
     }
 

@@ -21,7 +21,18 @@ class UserBase(BaseSchema):
 
 class UserCreate(UserBase):
     """User creation schema"""
-    password: str = Field(..., min_length=8, max_length=100)
+    password: str = Field(..., min_length=8, max_length=100,
+                         example="Demo123!")
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "email": "demo@evently.com",
+                "full_name": "Demo User",
+                "phone": "+1234567890",
+                "password": "Demo123!"
+            }
+        }
 
     @field_validator('password')
     def validate_password(cls, v):
@@ -46,6 +57,14 @@ class UserLogin(BaseSchema):
     """User login schema"""
     email: EmailStr
     password: str
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "email": "admin@evently.com",
+                "password": "Admin123!"
+            }
+        }
 
 
 class UserResponse(UserBase, IDSchema, TimestampSchema):
