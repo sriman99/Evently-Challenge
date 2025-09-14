@@ -63,15 +63,17 @@ async def auto_seed_demo_data():
 
         logger.info("Empty database detected, starting auto-seeding...")
 
+        # Use simple password hashing to avoid bcrypt issues
         try:
-            # Create demo users with password hashing
             admin_password_hash = get_password_hash("Admin123!")
             demo_password_hash = get_password_hash("Demo123!")
+            logger.info("Password hashing successful")
         except Exception as e:
-            logger.error(f"Password hashing failed: {e}")
-            # Use a simple hash as fallback (not secure, but for demo purposes)
-            admin_password_hash = "hashed_admin_password"
-            demo_password_hash = "hashed_demo_password"
+            logger.warning(f"Password hashing failed, using fallback: {e}")
+            # Simple fallback hash that will still work for demo
+            import hashlib
+            admin_password_hash = hashlib.sha256("Admin123!".encode()).hexdigest()
+            demo_password_hash = hashlib.sha256("Demo123!".encode()).hexdigest()
 
         admin_user = User(
             id=uuid4(),
@@ -104,8 +106,7 @@ async def auto_seed_demo_data():
             city="New York",
             state="NY",
             country="USA",
-            capacity=500,
-            description="A beautiful historic theater in the heart of Manhattan"
+            capacity=500
         )
 
         venue2 = Venue(
@@ -115,8 +116,7 @@ async def auto_seed_demo_data():
             city="San Francisco",
             state="CA",
             country="USA",
-            capacity=1000,
-            description="Modern convention center perfect for large events"
+            capacity=1000
         )
 
         session.add(venue1)
@@ -222,42 +222,51 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title=settings.APP_NAME,
     description="""
-    **Evently - Scalable Event Ticketing Platform**
+    <h2>Evently - Scalable Event Ticketing Platform</h2>
 
-    A high-performance backend system designed to handle large-scale event ticketing with thousands of concurrent users.
-    Built with modern technologies and best practices for production-ready applications.
+    <p>A high-performance backend system designed to handle large-scale event ticketing with thousands of concurrent users. Built with modern technologies and best practices for production-ready applications.</p>
 
-    **Key Features:**
-    - Advanced concurrency handling with optimistic locking
-    - Redis caching for real-time seat availability
-    - PostgreSQL persistence with transaction management
-    - JWT-based authentication and role-based access control
-    - Real-time analytics and comprehensive monitoring
-    - Rate limiting and performance optimization
-    - Comprehensive error handling and logging
+    <h3>Key Features:</h3>
+    <ul>
+    <li>Advanced concurrency handling with optimistic locking</li>
+    <li>Redis caching for real-time seat availability</li>
+    <li>PostgreSQL persistence with transaction management</li>
+    <li>JWT-based authentication and role-based access control</li>
+    <li>Real-time analytics and comprehensive monitoring</li>
+    <li>Rate limiting and performance optimization</li>
+    <li>Comprehensive error handling and logging</li>
+    </ul>
 
-    **Architecture Highlights:**
-    - FastAPI framework for high-performance async operations
-    - SQLAlchemy with async support for database operations
-    - Redis for caching and session management
-    - Pydantic for data validation and serialization
-    - Structured logging and monitoring integration
+    <h3>Architecture Highlights:</h3>
+    <ul>
+    <li>FastAPI framework for high-performance async operations</li>
+    <li>SQLAlchemy with async support for database operations</li>
+    <li>Redis for caching and session management</li>
+    <li>Pydantic for data validation and serialization</li>
+    <li>Structured logging and monitoring integration</li>
+    </ul>
 
-    **Quick Start for Evaluators:**
-    1. Login using POST /api/v1/auth/login with the demo credentials below
-    2. Copy the access_token from the login response
-    3. Click the "Authorize" button in this interface and paste the token
-    4. Test the protected endpoints such as GET /api/v1/events/
+    <h3>Quick Start for Evaluators:</h3>
+    <ol>
+    <li>Login using <code>POST /api/v1/auth/login</code> with the demo credentials below</li>
+    <li>Copy the <code>access_token</code> from the login response</li>
+    <li>Click the <strong>"Authorize"</strong> button in this interface and paste the token</li>
+    <li>Test the protected endpoints such as <code>GET /api/v1/events/</code></li>
+    </ol>
 
-    **Demo Credentials:**
-    - Admin Access: admin@evently.com / Admin123!
-    - User Access: demo@evently.com / Demo123!
+    <h3>Demo Credentials:</h3>
+    <ul>
+    <li><strong>Admin Access:</strong> admin@evently.com / Admin123!</li>
+    <li><strong>User Access:</strong> demo@evently.com / Demo123!</li>
+    </ul>
 
-    **Testing Recommendations:**
-    - Try concurrent booking scenarios with multiple browser tabs
-    - Test role-based access with both admin and user accounts
-    - Monitor real-time seat availability updates
-    - Explore the analytics endpoints with admin credentials
+    <h3>Testing Recommendations:</h3>
+    <ul>
+    <li>Try concurrent booking scenarios with multiple browser tabs</li>
+    <li>Test role-based access with both admin and user accounts</li>
+    <li>Monitor real-time seat availability updates</li>
+    <li>Explore the analytics endpoints with admin credentials</li>
+    </ul>
     """,
     version=settings.APP_VERSION,
     docs_url="/docs",  # Always enable docs for evaluator access
